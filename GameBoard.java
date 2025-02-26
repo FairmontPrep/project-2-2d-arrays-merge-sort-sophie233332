@@ -1,86 +1,83 @@
-import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+import javax.swing.*;
 
 public class GameBoard extends JFrame {
-    private static final int SIZE = 8;
-    private JPanel[][] squares = new JPanel[SIZE][SIZE];
-    private ImageIcon exampleIcon;
-    public String[][] piecesArray;
-
+    public int SIZE = 8;
+    private JPanel[][] squares = new JPanel[SIZE][SIZE]; 
+    private Color[][] piecesArray; // Store colors for pieces
 
     public GameBoard() {
-        setTitle("Chess Board");
-        setSize(600, 600);
+        setTitle("Color Board");
+        setSize(750, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new GridLayout(SIZE, SIZE));
 
-       
-
-        // create your 2d Array to store your image variables and assign positions
-        // add your code here
-        // this line of code initializes a new 2D Array of Strings the size of 1 row and 2 columns
-        // your 2D array must be a minimum of 6 rows x 2 columns
-        // you may add a row for every image if you'd like to have every square be a different color/image
-
-        piecesArray = new String[1][2];
-        piecesArray[0][0]= "temp2.png";
-        piecesArray[0][1]= "HP:200";
-
-        //print the contents of your 2D array
-        //this is a requirement to show your 2D array is not sorted at the beginning of your program
-
-        for (int i = 0; i < piecesArray.length; i++) {
-            for (int j = 0; j < piecesArray[i].length; j++) {
-                System.out.println("piecesArray[" + i + "][" + j + "] = " + piecesArray[i][j]);
-            }
-        }
-
-        exampleIcon = new ImageIcon(piecesArray[0][0]); // Load image file
-
-        initializeBoard();
-    }
-
-    private void initializeBoard() {
+        // Initialize the board with panels
         for (int row = 0; row < SIZE; row++) {
             for (int col = 0; col < SIZE; col++) {
-                squares[row][col] = new JPanel(new BorderLayout());
-
-                // creates the checkered pattern with the two colors
-                // you can add more colors or take away any you'd like
-                
-                if (row >= 2 && row <= 5) {
-                    squares[row][col].setBackground(new Color(139, 69, 19)); // brown
-                } else if ((row + col) % 2 == 0) {
-                    squares[row][col].setBackground(new Color(55, 255, 55)); //dark green
-                } else {
-                    squares[row][col].setBackground(new Color(200, 255, 200)); //lighter green
-                }
-
-
-                // this is where your sorting method will be called 
-                // you will use the column 2 values to arrange your images to the board
-                // be sure to sort them before you add them onto the board 
-                // you will use a loop to add to your 2D Array, below is an example of how to add ONE image to ONE square
-                
-                // Adding an image to specific positions (e.g., first row)
-                if (row == 0 && col==0) {
-                    Image scaledImage = exampleIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-                    JLabel pieceLabel = new JLabel(new ImageIcon(scaledImage));
-                    JLabel textLabel = new JLabel(piecesArray[0][1], SwingConstants.CENTER);
-                    squares[row][col].add(pieceLabel, BorderLayout.CENTER);
-                    squares[row][col].add(textLabel, BorderLayout.SOUTH);
-                }
-
-                
+                squares[row][col] = new JPanel();
+                squares[row][col].setBorder(BorderFactory.createLineBorder(Color.BLACK)); // Adds borders for clarity
                 add(squares[row][col]);
             }
         }
+
+        // Initialize color array
+        piecesArray = new Color[SIZE][SIZE]; 
+        loadPieces();
+        populateBoard();
     }
 
+    private void loadPieces() {
+        // Define the color assignments
+        Map<String, Color> colorMap = new HashMap<>();
+        colorMap.put("yellow", Color.YELLOW);
+        colorMap.put("black", Color.BLACK);
+        colorMap.put("red", Color.RED);
+        colorMap.put("brightYellow", new Color(255, 255, 102));
+        colorMap.put("green", Color.GREEN);
 
-    // add your merge sort method here
-    // add a comment to every line of code that describes what the line is accomplishing
-    // your mergeSort method does not have to return any value
+        // Define the coordinates for each color
+        Map<Color, int[]> colorAssignments = new HashMap<>();
+        colorAssignments.put(colorMap.get("yellow"), new int[]{
+            3,0, 3,1, 4,0, 4,1, 1,3, 1,7, 2,7, 4,7, 5,4, 5,5, 5,6, 6,5, 6,3, 7,3, 7,6, // Original yellow coordinates
+            5,1, 6,1, 7,1, 5,7, 6,6, 6,7, 7,7, 7,4, 7,5, 6,4, 3,5, 3,6 // Additional yellow coordinates
+        });
+        colorAssignments.put(colorMap.get("black"), new int[]{0,1, 0,2, 0,7, 3,4, 3,7});
+        colorAssignments.put(colorMap.get("red"), new int[]{4,3});
+        colorAssignments.put(colorMap.get("brightYellow"), new int[]{4,4, 4,5, 4,6, 3,3, 2,3, 2,4, 2,5, 2,6, 5,3});
+
+        // Assign colors to the piecesArray based on the coordinates
+        for (Color color : colorAssignments.keySet()) {
+            int[] coords = colorAssignments.get(color);
+            for (int i = 0; i < coords.length; i += 2) {
+                int row = coords[i];
+                int col = coords[i+1];
+                piecesArray[row][col] = color;
+            }
+        }
+
+        // Fill the rest with green
+        for (int row = 0; row < SIZE; row++) {
+            for (int col = 0; col < SIZE; col++) {
+                if (piecesArray[row][col] == null) {
+                    piecesArray[row][col] = colorMap.get("green");
+                }
+            }
+        }
+    }
+
+    private void populateBoard() {
+        for (int row = 0; row < SIZE; row++) {
+            for (int col = 0; col < SIZE; col++) {
+                squares[row][col].setBackground(piecesArray[row][col]); // Assign the color
+            }
+        }
+
+        revalidate();
+        repaint();
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
