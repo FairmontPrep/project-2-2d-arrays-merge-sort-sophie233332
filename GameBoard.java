@@ -1,77 +1,124 @@
 import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import javax.swing.*;
 
 public class GameBoard extends JFrame {
-    public int SIZE = 8;
-    private JPanel[][] squares = new JPanel[SIZE][SIZE]; 
-    private Color[][] piecesArray; // Store colors for pieces
+    private final int SIZE = 8;
+    private final int SquareSize = 80;
+    private final JPanel[][] squares = new JPanel[SIZE][SIZE]; // Board squares
+    private final String[][] piecesArray = new String[SIZE * SIZE][2]; // Stores color and position
 
     public GameBoard() {
         setTitle("Color Board");
-        setSize(750, 750);
+        setSize(SIZE * SquareSize, SIZE * SquareSize);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new GridLayout(SIZE, SIZE));
 
-        // Initialize the board with panels
+        // Initialize board squares
         for (int row = 0; row < SIZE; row++) {
             for (int col = 0; col < SIZE; col++) {
                 squares[row][col] = new JPanel();
-                squares[row][col].setBorder(BorderFactory.createLineBorder(Color.BLACK)); // Adds borders for clarity
+                squares[row][col].setPreferredSize(new Dimension(SquareSize, SquareSize));
+                squares[row][col].setBorder(BorderFactory.createLineBorder(Color.BLACK));
                 add(squares[row][col]);
             }
         }
 
-        // Initialize color array
-        piecesArray = new Color[SIZE][SIZE]; 
-        loadPieces();
+        // Randomly distribute colors
+        distributeColorsRandomly();
+
+        // Print unsorted values
+        printUnsortedValues();
+
+        // Populate board with unsorted values
         populateBoard();
+
+        // Delay 1 second, then sort and update board
+        new javax.swing.Timer(1000, e -> {
+            sortPiecesArray();
+            System.out.println("\nSorted Pieces Array:");
+            printSortedValues();
+            SwingUtilities.invokeLater(this::populateBoard); // Ensure UI update
+        }).start();
     }
 
-    private void loadPieces() {
-        // Define the color assignments
-        Map<String, Color> colorMap = new HashMap<>();
-        colorMap.put("yellow", Color.YELLOW);
-        colorMap.put("black", Color.BLACK);
-        colorMap.put("red", Color.RED);
-        colorMap.put("brightYellow", new Color(255, 255, 102));
-        colorMap.put("green", Color.GREEN);
+    // Randomly distribute colors based on required counts
+    private void distributeColorsRandomly() {
+        Map<String, String> colorMap = new HashMap<>();
+        colorMap.put("yellow", "#E3B709");
+        colorMap.put("black", "#000000");
+        colorMap.put("red", "#8A0E06");
+        colorMap.put("brightYellow", "#E8D43F");
+        colorMap.put("green", "#9C96C");
+        colorMap.put("brown", "#754627");
 
-        // Define the coordinates for each color
-        Map<Color, int[]> colorAssignments = new HashMap<>();
-        colorAssignments.put(colorMap.get("yellow"), new int[]{
-            3,0, 3,1, 4,0, 4,1, 1,3, 1,7, 2,7, 4,7, 5,4, 5,5, 5,6, 6,5, 6,3, 7,3, 7,6, // Original yellow coordinates
-            5,1, 6,1, 7,1, 5,7, 6,6, 6,7, 7,7, 7,4, 7,5, 6,4, 3,5, 3,6 // Additional yellow coordinates
+        // Define the required number of blocks per color
+        Map<String, Integer> colorCounts = new HashMap<>();
+        colorCounts.put("yellow", 16);
+        colorCounts.put("black", 5);
+        colorCounts.put("red", 1);
+        colorCounts.put("brightYellow", 18);
+        colorCounts.put("brown", 5);
+        colorCounts.put("green", 19); // Remaining will be filled with green
+
+        // Create a list of available positions
+        List<Integer> positions = new ArrayList<>();
+        for (int i = 0; i < SIZE * SIZE; i++) {
+            positions.add(i);
+        }
+        Collections.shuffle(positions); // Randomize positions
+
+        int index = 0;
+        for (String color : colorCounts.keySet()) {
+            int count = colorCounts.get(color);
+            for (int i = 0; i < count; i++) {
+                int pos = positions.get(index++);
+                piecesArray[pos][0] = colorMap.get(color);
+                piecesArray[pos][1] = String.valueOf(pos);
+            }
+        }
+    }
+
+    // Print the unsorted values
+    private void printUnsortedValues() {
+        System.out.println("Unsorted Pieces Array:");
+        for (String[] piece : piecesArray) {
+            if (piece[0] != null) {
+                System.out.println("Color: " + piece[0] + ", Position: " + piece[1]);
+            }
+        }
+    }
+
+    // Print the sorted values
+    private void printSortedValues() {
+        for (String[] piece : piecesArray) {
+            if (piece[0] != null) {
+                System.out.println("Color: " + piece[0] + ", Position: " + piece[1]);
+            }
+        }
+    }
+
+    // Sort the piecesArray by position (numerically)
+    private void sortPiecesArray() {
+        Arrays.sort(piecesArray, (a, b) -> {
+            if (a[1] == null) return 1; // Move nulls to the end
+            if (b[1] == null) return -1;
+            return Integer.compare(Integer.parseInt(a[1]), Integer.parseInt(b[1]));
         });
-        colorAssignments.put(colorMap.get("black"), new int[]{0,1, 0,2, 0,7, 3,4, 3,7});
-        colorAssignments.put(colorMap.get("red"), new int[]{4,3});
-        colorAssignments.put(colorMap.get("brightYellow"), new int[]{4,4, 4,5, 4,6, 3,3, 2,3, 2,4, 2,5, 2,6, 5,3});
-
-        // Assign colors to the piecesArray based on the coordinates
-        for (Color color : colorAssignments.keySet()) {
-            int[] coords = colorAssignments.get(color);
-            for (int i = 0; i < coords.length; i += 2) {
-                int row = coords[i];
-                int col = coords[i+1];
-                piecesArray[row][col] = color;
-            }
-        }
-
-        // Fill the rest with green
-        for (int row = 0; row < SIZE; row++) {
-            for (int col = 0; col < SIZE; col++) {
-                if (piecesArray[row][col] == null) {
-                    piecesArray[row][col] = colorMap.get("green");
-                }
-            }
-        }
     }
 
     private void populateBoard() {
+        int pieceRow = 0;
+        int squareName = 0;
+
         for (int row = 0; row < SIZE; row++) {
             for (int col = 0; col < SIZE; col++) {
-                squares[row][col].setBackground(piecesArray[row][col]); // Assign the color
+                if (piecesArray[pieceRow][0] != null && Integer.parseInt(piecesArray[pieceRow][1]) == squareName) {
+                    Color color = Color.decode(piecesArray[pieceRow][0]);
+                    squares[row][col].setBackground(color);
+                    pieceRow++;
+                }
+                squareName++;
             }
         }
 
